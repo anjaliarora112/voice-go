@@ -7,12 +7,12 @@ import os
 import uuid
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 
-from voice_engine import convert_voice, get_audio_info
+from voice_engine import convert_voice, generate_voice_preview, get_audio_info
 from voice_profiles import ALL_VOICES, FEMALE_VOICES, MALE_VOICES, get_voice_by_id
 
 app = FastAPI(title="VoiceGo", description="Indian Voice Conversion Platform")
@@ -55,6 +55,30 @@ async def get_voice(voice_id: str):
     if not voice:
         raise HTTPException(status_code=404, detail="Voice not found")
     return voice
+
+
+_preview_cache: dict[str, bytes] = {}
+
+
+@app.get("/api/preview/{voice_id}")
+async def preview_voice(voice_id: str):
+    voice = get_voice_by_id(voice_id)
+    if not voice:
+        raise HTTPException(status_code=404, detail="Voice not found")
+
+    if voice_id not in _preview_cache:
+        try:
+            _preview_cache[voice_id] = generate_voice_preview(voice)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"Preview generation failed: {str(e)}"
+            )
+
+    return Response(
+        content=_preview_cache[voice_id],
+        media_type="audio/wav",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
 
 
 @app.post("/api/convert")

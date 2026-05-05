@@ -8,6 +8,60 @@ let isRecording = false;
 let recordStartTime = null;
 let recordTimerInterval = null;
 let audioContext = null;
+let previewAudio = null;
+let currentPreviewId = null;
+
+/* ============ Voice Preview ============ */
+
+function previewVoice(voiceId, btnElement) {
+    // If already playing this voice, stop it
+    if (previewAudio && currentPreviewId === voiceId) {
+        previewAudio.pause();
+        previewAudio.currentTime = 0;
+        previewAudio = null;
+        currentPreviewId = null;
+        btnElement.classList.remove('playing');
+        btnElement.innerHTML = '&#9654; Preview';
+        return;
+    }
+
+    // Stop any currently playing preview
+    if (previewAudio) {
+        previewAudio.pause();
+        previewAudio.currentTime = 0;
+        document.querySelectorAll('.preview-btn.playing').forEach(btn => {
+            btn.classList.remove('playing');
+            btn.innerHTML = '&#9654; Preview';
+        });
+    }
+
+    // Show loading state
+    btnElement.innerHTML = '&#9203; Loading...';
+    btnElement.classList.add('playing');
+
+    previewAudio = new Audio(`/api/preview/${voiceId}`);
+    currentPreviewId = voiceId;
+
+    previewAudio.oncanplaythrough = () => {
+        btnElement.innerHTML = '&#9209; Playing';
+        previewAudio.play();
+    };
+
+    previewAudio.onended = () => {
+        btnElement.classList.remove('playing');
+        btnElement.innerHTML = '&#9654; Preview';
+        previewAudio = null;
+        currentPreviewId = null;
+    };
+
+    previewAudio.onerror = () => {
+        btnElement.classList.remove('playing');
+        btnElement.innerHTML = '&#9654; Preview';
+        previewAudio = null;
+        currentPreviewId = null;
+        showToast('Could not load voice preview', 'error');
+    };
+}
 
 /* ============ Voice Selection ============ */
 

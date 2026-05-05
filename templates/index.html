@@ -79,10 +79,15 @@
                     </div>
                 </div>
                 <div class="voice-description">{{ voice.description }}</div>
-                <div class="voice-tags">
-                    <span class="voice-tag">Male</span>
-                    <span class="voice-tag">{{ voice.accent }}</span>
-                    <span class="voice-tag">Natural</span>
+                <div class="voice-card-footer">
+                    <div class="voice-tags">
+                        <span class="voice-tag">Male</span>
+                        <span class="voice-tag">{{ voice.accent }}</span>
+                        <span class="voice-tag">Natural</span>
+                    </div>
+                    <button class="preview-btn" onclick="event.stopPropagation(); previewVoice('{{ voice.id }}', this)" title="Preview this voice">
+                        &#9654; Preview
+                    </button>
                 </div>
             </div>
             {% endfor %}
@@ -99,10 +104,15 @@
                     </div>
                 </div>
                 <div class="voice-description">{{ voice.description }}</div>
-                <div class="voice-tags">
-                    <span class="voice-tag">Female</span>
-                    <span class="voice-tag">{{ voice.accent }}</span>
-                    <span class="voice-tag">Natural</span>
+                <div class="voice-card-footer">
+                    <div class="voice-tags">
+                        <span class="voice-tag">Female</span>
+                        <span class="voice-tag">{{ voice.accent }}</span>
+                        <span class="voice-tag">Natural</span>
+                    </div>
+                    <button class="preview-btn" onclick="event.stopPropagation(); previewVoice('{{ voice.id }}', this)" title="Preview this voice">
+                        &#9654; Preview
+                    </button>
                 </div>
             </div>
             {% endfor %}

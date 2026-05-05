@@ -118,6 +118,41 @@ def convert_voice(
     return buffer.read()
 
 
+def generate_voice_preview(voice_profile: dict) -> bytes:
+    """Generate a short preview clip demonstrating the voice profile."""
+    sr = 22050
+    duration = 3.0
+    t = np.linspace(0, duration, int(sr * duration), endpoint=False)
+
+    # Simulate a human-like vowel sound using multiple harmonics
+    f0 = 150.0  # base pitch (neutral)
+    harmonics = [1.0, 0.7, 0.5, 0.35, 0.25, 0.18, 0.12, 0.08]
+    y = np.zeros_like(t)
+    for i, amp in enumerate(harmonics):
+        freq = f0 * (i + 1)
+        y += amp * np.sin(2 * np.pi * freq * t)
+
+    # Add natural amplitude envelope (fade in/out with slight vibrato)
+    vibrato = 1.0 + 0.02 * np.sin(2 * np.pi * 5.5 * t)
+    envelope = np.ones_like(t)
+    fade_samples = int(0.15 * sr)
+    envelope[:fade_samples] = np.linspace(0, 1, fade_samples)
+    envelope[-fade_samples:] = np.linspace(1, 0, fade_samples)
+    y = y * envelope * vibrato
+
+    y = _normalize_audio(y)
+
+    # Write base audio to temp file, then convert
+    tmp_path = os.path.join(tempfile.gettempdir(), f"preview_base_{voice_profile['id']}.wav")
+    sf.write(tmp_path, y, sr)
+
+    try:
+        return convert_voice(tmp_path, voice_profile)
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
+
 def get_audio_info(file_path: str) -> dict:
     """Get audio file information."""
     y, sr = librosa.load(file_path, sr=None)
