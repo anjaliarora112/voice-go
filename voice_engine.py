@@ -22,18 +22,24 @@ def _butter_bandpass(lowcut: float, highcut: float, fs: float, order: int = 5):
 
 
 def _apply_formant_shift(y: np.ndarray, sr: int, formant_ratio: float) -> np.ndarray:
-    """Shift formants by resampling without changing pitch."""
+    """Shift formants by resampling then pitch-correcting back."""
     if abs(formant_ratio - 1.0) < 0.01:
         return y
 
-    stretched = librosa.effects.time_stretch(y, rate=formant_ratio)
-    target_len = len(y)
-    if len(stretched) > target_len:
-        stretched = stretched[:target_len]
-    else:
-        stretched = np.pad(stretched, (0, target_len - len(stretched)))
+    # Resample shifts both pitch and formants
+    target_sr = int(sr * formant_ratio)
+    resampled = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
 
-    return stretched
+    # Pitch-shift back to undo the pitch change, keeping formant shift
+    semitones = -12.0 * np.log2(formant_ratio)
+    corrected = librosa.effects.pitch_shift(
+        y=resampled, sr=target_sr, n_steps=semitones
+    )
+
+    # Resample back to original sample rate to preserve duration
+    result = librosa.resample(corrected, orig_sr=target_sr, target_sr=sr)
+
+    return result
 
 
 def _apply_breathiness(y: np.ndarray, amount: float) -> np.ndarray:

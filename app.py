@@ -101,6 +101,8 @@ async def convert(
     input_path = os.path.join(UPLOAD_DIR, f"{file_id}_input{ext}")
     output_path = os.path.join(UPLOAD_DIR, f"{file_id}_output.wav")
 
+    if audio.size and audio.size > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="File too large. Max 50MB.")
     content = await audio.read()
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File too large. Max 50MB.")
