@@ -8,6 +8,73 @@ let isRecording = false;
 let recordStartTime = null;
 let recordTimerInterval = null;
 let audioContext = null;
+let previewAudio = null;
+let currentPreviewId = null;
+
+/* ============ Voice Preview ============ */
+
+function clearPreviewHandlers(audio) {
+    if (!audio) return;
+    audio.oncanplaythrough = null;
+    audio.onended = null;
+    audio.onerror = null;
+}
+
+function previewVoice(voiceId, btnElement) {
+    // If already playing this voice, stop it
+    if (previewAudio && currentPreviewId === voiceId) {
+        clearPreviewHandlers(previewAudio);
+        previewAudio.pause();
+        previewAudio.currentTime = 0;
+        previewAudio = null;
+        currentPreviewId = null;
+        btnElement.classList.remove('playing');
+        btnElement.innerHTML = '&#9654; Preview';
+        return;
+    }
+
+    // Stop any currently playing preview
+    if (previewAudio) {
+        clearPreviewHandlers(previewAudio);
+        previewAudio.pause();
+        previewAudio.currentTime = 0;
+        document.querySelectorAll('.preview-btn.playing').forEach(btn => {
+            btn.classList.remove('playing');
+            btn.innerHTML = '&#9654; Preview';
+        });
+    }
+
+    // Show loading state
+    btnElement.innerHTML = '&#9203; Loading...';
+    btnElement.classList.add('playing');
+
+    const thisAudio = new Audio(`/api/preview/${voiceId}`);
+    previewAudio = thisAudio;
+    currentPreviewId = voiceId;
+
+    thisAudio.oncanplaythrough = () => {
+        if (previewAudio !== thisAudio) return;
+        btnElement.innerHTML = '&#9209; Playing';
+        thisAudio.play();
+    };
+
+    thisAudio.onended = () => {
+        if (previewAudio !== thisAudio) return;
+        btnElement.classList.remove('playing');
+        btnElement.innerHTML = '&#9654; Preview';
+        previewAudio = null;
+        currentPreviewId = null;
+    };
+
+    thisAudio.onerror = () => {
+        if (previewAudio !== thisAudio) return;
+        btnElement.classList.remove('playing');
+        btnElement.innerHTML = '&#9654; Preview';
+        previewAudio = null;
+        currentPreviewId = null;
+        showToast('Could not load voice preview', 'error');
+    };
+}
 
 /* ============ Voice Selection ============ */
 

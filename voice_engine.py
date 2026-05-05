@@ -22,18 +22,24 @@ def _butter_bandpass(lowcut: float, highcut: float, fs: float, order: int = 5):
 
 
 def _apply_formant_shift(y: np.ndarray, sr: int, formant_ratio: float) -> np.ndarray:
-    """Shift formants by resampling without changing pitch."""
+    """Shift formants by resampling then pitch-correcting back."""
     if abs(formant_ratio - 1.0) < 0.01:
         return y
 
-    stretched = librosa.effects.time_stretch(y, rate=formant_ratio)
-    target_len = len(y)
-    if len(stretched) > target_len:
-        stretched = stretched[:target_len]
-    else:
-        stretched = np.pad(stretched, (0, target_len - len(stretched)))
+    # Resample shifts both pitch and formants
+    target_sr = int(sr * formant_ratio)
+    resampled = librosa.resample(y, orig_sr=sr, target_sr=target_sr)
 
-    return stretched
+    # Pitch-shift back to undo the pitch change, keeping formant shift
+    semitones = -12.0 * np.log2(formant_ratio)
+    corrected = librosa.effects.pitch_shift(
+        y=resampled, sr=target_sr, n_steps=semitones
+    )
+
+    # Resample back to original sample rate to preserve duration
+    result = librosa.resample(corrected, orig_sr=target_sr, target_sr=sr)
+
+    return result
 
 
 def _apply_breathiness(y: np.ndarray, amount: float) -> np.ndarray:
@@ -116,6 +122,42 @@ def convert_voice(
     sf.write(buffer, y, sr, format="WAV")
     buffer.seek(0)
     return buffer.read()
+
+
+def generate_voice_preview(voice_profile: dict) -> bytes:
+    """Generate a short preview clip demonstrating the voice profile."""
+    sr = 22050
+    duration = 3.0
+    t = np.linspace(0, duration, int(sr * duration), endpoint=False)
+
+    # Simulate a human-like vowel sound using multiple harmonics
+    f0 = 150.0  # base pitch (neutral)
+    harmonics = [1.0, 0.7, 0.5, 0.35, 0.25, 0.18, 0.12, 0.08]
+    y = np.zeros_like(t)
+    for i, amp in enumerate(harmonics):
+        freq = f0 * (i + 1)
+        y += amp * np.sin(2 * np.pi * freq * t)
+
+    # Add natural amplitude envelope (fade in/out with slight vibrato)
+    vibrato = 1.0 + 0.02 * np.sin(2 * np.pi * 5.5 * t)
+    envelope = np.ones_like(t)
+    fade_samples = int(0.15 * sr)
+    envelope[:fade_samples] = np.linspace(0, 1, fade_samples)
+    envelope[-fade_samples:] = np.linspace(1, 0, fade_samples)
+    y = y * envelope * vibrato
+
+    y = _normalize_audio(y)
+
+    # Write base audio to temp file, then convert
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix=".wav", prefix=f"preview_base_{voice_profile['id']}_")
+    os.close(tmp_fd)
+    sf.write(tmp_path, y, sr)
+
+    try:
+        return convert_voice(tmp_path, voice_profile)
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 
 def get_audio_info(file_path: str) -> dict:
