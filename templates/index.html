@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoiceGo - Indian Voice Conversion Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎙️</text></svg>">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo">Voice<span>Go</span></div>
+        <ul class="nav-links">
+            <li><a href="#voices">Voices</a></li>
+            <li><a href="#convert">Convert</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
+            <li><a href="#features">Features</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Transform Your Voice with <span class="gradient-text">Real Indian Voices</span></h1>
+            <p>Experience natural voice conversion powered by advanced audio processing. Choose from 20 authentic Indian voice profiles - real college-age voices, not robotic synthesizers.</p>
+            <div class="hero-stats">
+                <div class="stat">
+                    <div class="stat-number">20</div>
+                    <div class="stat-label">Voice Profiles</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">10+10</div>
+                    <div class="stat-label">Boys + Girls</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-number">5 min</div>
+                    <div class="stat-label">Max Duration</div>
+                </div>
+            </div>
+        </div>
+        <div class="wave-container">
+            <div class="wave"></div>
+        </div>
+    </section>
+
+    <!-- Voice Selection -->
+    <section class="section" id="voices">
+        <div class="section-title">
+            <h2>Choose Your Voice</h2>
+            <p>Select from our collection of natural Indian voice profiles</p>
+        </div>
+
+        <div class="gender-toggle">
+            <button class="gender-btn active" data-gender="male" onclick="filterVoices('male')">
+                👦 Boys (10)
+            </button>
+            <button class="gender-btn" data-gender="female" onclick="filterVoices('female')">
+                👧 Girls (10)
+            </button>
+            <button class="gender-btn" data-gender="all" onclick="filterVoices('all')">
+                All Voices (20)
+            </button>
+        </div>
+
+        <div class="voices-grid" id="voicesGrid">
+            {% for voice in male_voices %}
+            <div class="voice-card male" data-voice-id="{{ voice.id }}" data-gender="male"
+                 style="--card-accent: {{ voice.color }}" onclick="selectVoice('{{ voice.id }}')">
+                <div class="selected-badge">SELECTED</div>
+                <div class="voice-card-header">
+                    <div class="voice-avatar">{{ voice.avatar_emoji }}</div>
+                    <div>
+                        <div class="voice-name">{{ voice.name }}</div>
+                        <div class="voice-meta">Age {{ voice.age }} &middot; {{ voice.accent }}</div>
+                    </div>
+                </div>
+                <div class="voice-description">{{ voice.description }}</div>
+                <div class="voice-tags">
+                    <span class="voice-tag">Male</span>
+                    <span class="voice-tag">{{ voice.accent }}</span>
+                    <span class="voice-tag">Natural</span>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% for voice in female_voices %}
+            <div class="voice-card female" data-voice-id="{{ voice.id }}" data-gender="female"
+                 style="--card-accent: {{ voice.color }}; display: none;" onclick="selectVoice('{{ voice.id }}')">
+                <div class="selected-badge">SELECTED</div>
+                <div class="voice-card-header">
+                    <div class="voice-avatar">{{ voice.avatar_emoji }}</div>
+                    <div>
+                        <div class="voice-name">{{ voice.name }}</div>
+                        <div class="voice-meta">Age {{ voice.age }} &middot; {{ voice.accent }}</div>
+                    </div>
+                </div>
+                <div class="voice-description">{{ voice.description }}</div>
+                <div class="voice-tags">
+                    <span class="voice-tag">Female</span>
+                    <span class="voice-tag">{{ voice.accent }}</span>
+                    <span class="voice-tag">Natural</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Converter Section -->
+    <section class="section" id="convert">
+        <div class="section-title">
+            <h2>Convert Your Voice</h2>
+            <p>Upload or record your voice (max 5 minutes) and transform it</p>
+        </div>
+
+        <div class="converter-section">
+            <div id="selectedVoiceInfo" style="display:none; margin-bottom:1.5rem; padding:1rem; background:rgba(108,99,255,0.1); border-radius:12px; border:1px solid rgba(108,99,255,0.3);">
+                <span style="color:var(--text-muted); font-size:0.85rem;">Converting to:</span>
+                <span id="selectedVoiceName" style="font-weight:700; font-size:1.1rem; margin-left:0.5rem;"></span>
+            </div>
+
+            <!-- Upload Area -->
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('audioInput').click()">
+                <div class="upload-icon">🎵</div>
+                <h3>Drop your audio file here</h3>
+                <p>or click to browse files</p>
+                <div class="upload-formats">Supports: WAV, MP3, OGG, WebM, M4A, FLAC (Max 50MB, 5 min)</div>
+            </div>
+            <input type="file" id="audioInput" accept="audio/*" style="display:none" onchange="handleFileSelect(event)">
+
+            <!-- Or Divider -->
+            <div class="or-divider">OR</div>
+
+            <!-- Record Button -->
+            <div class="record-section">
+                <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
+                    <div class="record-dot"></div>
+                    <span id="recordBtnText">Record Your Voice</span>
+                </button>
+                <div class="record-timer" id="recordTimer">00:00</div>
+            </div>
+
+            <!-- Audio Preview -->
+            <div class="audio-preview" id="audioPreview">
+                <div class="audio-preview-header">
+                    <div>
+                        <h4>Your Audio</h4>
+                        <span class="audio-info" id="audioInfo"></span>
+                    </div>
+                    <button class="remove-audio" onclick="removeAudio()" title="Remove audio">&#10005;</button>
+                </div>
+                <div class="waveform-container">
+                    <canvas id="waveformCanvas"></canvas>
+                </div>
+                <audio id="originalAudio" controls></audio>
+            </div>
+
+            <!-- Convert Button -->
+            <button class="convert-btn" id="convertBtn" onclick="convertVoice()" disabled>
+                Transform Voice
+            </button>
+
+            <!-- Progress -->
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">Processing your voice...</div>
+            </div>
+
+            <!-- Result -->
+            <div class="result-section" id="resultSection">
+                <div class="result-header">
+                    <span style="font-size:1.5rem;">&#10003;</span>
+                    <h3>Voice Converted Successfully!</h3>
+                </div>
+                <div class="result-audio">
+                    <label>Original Voice</label>
+                    <audio id="resultOriginal" controls></audio>
+                </div>
+                <div class="result-audio">
+                    <label>Converted Voice (<span id="resultVoiceName"></span>)</label>
+                    <audio id="resultConverted" controls></audio>
+                </div>
+                <div class="result-actions">
+                    <a class="download-btn" id="downloadBtn" href="#" download>
+                        &#11015; Download Converted Audio
+                    </a>
+                    <button class="try-another-btn" onclick="resetConverter()">
+                        &#8635; Try Another Voice
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="section" id="how-it-works">
+        <div class="section-title">
+            <h2>How It Works</h2>
+            <p>Three simple steps to transform your voice</p>
+        </div>
+
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <h3>Choose a Voice</h3>
+                <p>Browse our collection of 20 authentic Indian voice profiles. Pick any boy or girl voice that you like.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <h3>Upload or Record</h3>
+                <p>Upload an audio file or record directly in your browser. Keep it under 5 minutes for best results.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <h3>Download & Share</h3>
+                <p>Get your transformed audio instantly. Download the WAV file and share it with friends!</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section" id="features">
+        <div class="section-title">
+            <h2>Why VoiceGo?</h2>
+            <p>Built for natural, human-like voice conversion</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🎭</div>
+                <h3>Natural Sounding</h3>
+                <p>Advanced pitch shifting with formant preservation ensures voices sound human, not robotic. Real voice characteristics maintained.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🇮🇳</div>
+                <h3>Indian Voice Profiles</h3>
+                <p>20 curated voice profiles inspired by real Indian college students. Hindi, Punjabi, Bengali, Tamil, and more accents.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔄</div>
+                <h3>Male to Female & Back</h3>
+                <p>Convert any voice between genders naturally. Boy to girl, girl to boy - with authentic vocal characteristics.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Fast Processing</h3>
+                <p>Powered by librosa and advanced DSP algorithms for quick voice transformation with high-quality output.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎤</div>
+                <h3>Record In-Browser</h3>
+                <p>No need to install anything. Record directly from your browser microphone with real-time waveform visualization.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>Works Everywhere</h3>
+                <p>Fully responsive design works on desktop, tablet, and mobile. Convert voices anywhere, anytime.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>VoiceGo - Indian Voice Conversion Platform</p>
+        <p style="margin-top:0.5rem;">Built with FastAPI, librosa & Web Audio API</p>
+    </footer>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
