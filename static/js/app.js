@@ -13,9 +13,17 @@ let currentPreviewId = null;
 
 /* ============ Voice Preview ============ */
 
+function clearPreviewHandlers(audio) {
+    if (!audio) return;
+    audio.oncanplaythrough = null;
+    audio.onended = null;
+    audio.onerror = null;
+}
+
 function previewVoice(voiceId, btnElement) {
     // If already playing this voice, stop it
     if (previewAudio && currentPreviewId === voiceId) {
+        clearPreviewHandlers(previewAudio);
         previewAudio.pause();
         previewAudio.currentTime = 0;
         previewAudio = null;
@@ -27,6 +35,7 @@ function previewVoice(voiceId, btnElement) {
 
     // Stop any currently playing preview
     if (previewAudio) {
+        clearPreviewHandlers(previewAudio);
         previewAudio.pause();
         previewAudio.currentTime = 0;
         document.querySelectorAll('.preview-btn.playing').forEach(btn => {
@@ -39,22 +48,26 @@ function previewVoice(voiceId, btnElement) {
     btnElement.innerHTML = '&#9203; Loading...';
     btnElement.classList.add('playing');
 
-    previewAudio = new Audio(`/api/preview/${voiceId}`);
+    const thisAudio = new Audio(`/api/preview/${voiceId}`);
+    previewAudio = thisAudio;
     currentPreviewId = voiceId;
 
-    previewAudio.oncanplaythrough = () => {
+    thisAudio.oncanplaythrough = () => {
+        if (previewAudio !== thisAudio) return;
         btnElement.innerHTML = '&#9209; Playing';
-        previewAudio.play();
+        thisAudio.play();
     };
 
-    previewAudio.onended = () => {
+    thisAudio.onended = () => {
+        if (previewAudio !== thisAudio) return;
         btnElement.classList.remove('playing');
         btnElement.innerHTML = '&#9654; Preview';
         previewAudio = null;
         currentPreviewId = null;
     };
 
-    previewAudio.onerror = () => {
+    thisAudio.onerror = () => {
+        if (previewAudio !== thisAudio) return;
         btnElement.classList.remove('playing');
         btnElement.innerHTML = '&#9654; Preview';
         previewAudio = null;

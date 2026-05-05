@@ -149,7 +149,8 @@ def generate_voice_preview(voice_profile: dict) -> bytes:
     y = _normalize_audio(y)
 
     # Write base audio to temp file, then convert
-    tmp_path = os.path.join(tempfile.gettempdir(), f"preview_base_{voice_profile['id']}.wav")
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix=".wav", prefix=f"preview_base_{voice_profile['id']}_")
+    os.close(tmp_fd)
     sf.write(tmp_path, y, sr)
 
     try:
